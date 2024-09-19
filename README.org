@@ -1,0 +1,75 @@
+#+title: Amazing Bluetooth Detector
+
+* Step1: BLE Beacons using ESP32 and ESPhome
+
+HEre are steps to install ESPhome using Docker and configure ESP32 boards as BLE beacons for proximity-based applications.
+
+** Requirements
+- Any ESP32 board (seeed ones work best)
+- Docker
+
+** Installing ESPhome with Docker
+
+
+  install it via docker compose (v2)
+    #+begin_src yaml
+      version: '3'
+      services:
+        esphome:
+        container_name: esphome
+        image: ghcr.io/esphome/esphome
+        volumes:
+          - /path/to/esphome/config:/config
+          - /etc/localtime:/etc/localtime:ro
+        restart: always
+        privileged: true
+        network_mode: host
+        environment:
+         - USERNAME=test
+         - PASSWORD=ChangeMe
+    #+end_src
+
+    run it with
+
+    #+begin_src bash
+      docker compose up -d
+    #+end_src
+
+    after that esphome can be accessed on your browser at http://localhost:6052
+
+*** Configure devices
+    add this, creating a random UUID per device
+    to get the random UUID: https://www.uuidgenerator.net/
+    deployment can be made via esphome on localhost (docker) or [[https://web.esphome.io/][this web site]] (chrome only)
+    #+begin_src yaml
+      esp32_ble_beacon:
+         type: iBeacon
+         uuid: 'c29ce823-e67a-4e71-bff2-abaa32e77111'
+         min_interval: 20ms
+    #+end_src
+
+
+*** Calibrate devlces
+    Device effectiveness depends on a number of factors: antenna, TX power, and so.
+    The BLE beacon usually transmits TX power in the message, however it's better if some calibration is made.
+    To calibrate:
+ 1. Place the beacon at exactly 1 meter (3 ft ish I think?) from the bluetooth receiver.
+ 2. Make sure the MAC for the device is in config.py
+ 3. Run sudo python calibration.py
+ 4. Wait about 5 seconds without moving the devices from each other.
+ 5. Check calibration.log and calibrated_beacons.json
+
+*** Run script
+    the script runs on python and requires BLUEZ running as a buetooth supervisor on systemd (if you are using ubuntu/debian/fedora... that is the standard)
+    to run :
+    sudo python scan
+
+    if you get an error check :
+    1. if you have the libraries (if not pip install ....)
+    2. if the bluez daemon needs to be restarted, usually : systemctl stop bluetooth (the script will turn it back on automagially)
+    3. The script lets you send all data to MQTT to visualize them on grafana/influxdb using the --mqtt flags
+
+
+*** ITems I need to work on next
+  - [ ] Visualization for RSSI and distance (on the works) using grafana
+  - [ ] Send this to the audio / video server somehow (UDP seems like the right choice)

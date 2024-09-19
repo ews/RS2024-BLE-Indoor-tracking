@@ -1,0 +1,71 @@
+version: "3.7"
+
+services:
+  influxdb:
+    image: influxdb:2.0
+    container_name: influxdb
+    environment:
+      - INFLUXDB_DB=ble_data
+      - INFLUXDB_HTTP_AUTH_ENABLED=true
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin
+      - INFLUXDB_USER=telegraf
+      - INFLUXDB_USER_PASSWORD=telegraf
+      - INFLUXDB_RETENTION=30d # Data retention policy (optional)
+      - INFLUXDB_ORG=solidmeh
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    depends_on:
+      - influxdb
+    environment:
+      - HOSTNAME=telegraf
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    restart: unless-stopped
+
+  mqtt-broker:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001" # WebSocket port (optional)
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf # Mount the config file
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  mqtt-subscriber:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-subscriber
+    entrypoint: /bin/sh -c "mosquitto_sub -h mqtt-broker -t '#'"
+    depends_on:
+      - mqtt-broker
+
+volumes:
+  influxdb_data:
+  grafana_data:
+  mosquitto_data:
+  mosquitto_config:
+  mosquitto_log:
