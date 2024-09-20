@@ -49,9 +49,9 @@ class KalmanFilter:
         kalman_gain = self.error / (self.error + self.measurement_variance)
         self.estimate = self.estimate + kalman_gain * (measurement - self.estimate)
         self.error = (1 - kalman_gain) * self.error + self.process_variance
-        logger.debug(
-            f"Kalman Filter updated: RSSI={measurement}, Estimated RSSI={self.estimate}"
-        )
+        # logger.debug(
+        #     f"Kalman Filter updated: RSSI={measurement}, Estimated RSSI={self.estimate}"
+        # )
         return self.estimate
 
 
@@ -88,7 +88,7 @@ def extract_ibeacon_data(dev):
         tuple: (UUID, Tx Power) or None if not an iBeacon.
     """
     for adtype, desc, value in dev.getScanData():
-        # logger.debug(f"Scan data: {adtype}, {desc}, {value}")
+        logger.debug(f"Scan data: {adtype}, {desc}, {value}")
         if desc == "Manufacturer":
             try:
                 if value[0:4] == "4c00" and len(value) >= 46:
