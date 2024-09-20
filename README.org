@@ -69,6 +69,10 @@ HEre are steps to install ESPhome using Docker and configure ESP32 boards as BLE
     2. if the bluez daemon needs to be restarted, usually : systemctl stop bluetooth (the script will turn it back on automagially)
     3. The script lets you send all data to MQTT to visualize them on grafana/influxdb using the --mqtt flags
 
+       if you need to use sudo from a python venv you can
+       #+begin_src bash
+         sudo -E env PATH=$PATH pyton ./scan.py
+       #+end_src
 
 *** ITems I need to work on next
   - [ ] Visualization for RSSI and distance (on the works) using grafana
