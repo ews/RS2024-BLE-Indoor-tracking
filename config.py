@@ -7,5 +7,6 @@ kalman_config = {
 
 target_devices = {
     '64:e8:33:80:c3:5a': True,
-    '10:06:1c:b5:64:42': True
+    '10:06:1c:b5:64:42': True,
+    'e8:6b:ea:cb:0e:12': True
 }
