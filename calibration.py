@@ -1,12 +1,14 @@
 import time
 import logging
 import json
-from bluepy.btle import Scanner, DefaultDelegate
+from bluepy.btle import DefaultDelegate
+from bluepy.btle import Scanner
 from config import target_devices  # Import target devices from config.py
 
 # Set up logging
-logging.basicConfig(filename='calibration.log', level=logging.DEBUG)
+logging.basicConfig(filename="calibration.log", level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 class CalibrationDelegate(DefaultDelegate):
     def __init__(self, target_device):
@@ -18,6 +20,7 @@ class CalibrationDelegate(DefaultDelegate):
         if dev.addr == self.target_device:
             logger.debug(f"Discovered target device {dev.addr} with RSSI {dev.rssi}")
             self.rssi_values.append(dev.rssi)
+
 
 def calibrate_beacon(target_device, scan_time=10):
     """
@@ -33,7 +36,9 @@ def calibrate_beacon(target_device, scan_time=10):
     scanner = Scanner().withDelegate(CalibrationDelegate(target_device))
     start_time = time.time()
 
-    logger.info(f"Starting calibration for device {target_device} for {scan_time} seconds.")
+    logger.info(
+        f"Starting calibration for device {target_device} for {scan_time} seconds."
+    )
     while time.time() - start_time < scan_time:
         scanner.scan(1.0)  # Scan every 1 second
 
@@ -48,7 +53,10 @@ def calibrate_beacon(target_device, scan_time=10):
 
     return average_rssi
 
-def save_calibration_to_file(mac_address, calibrated_tx_power, file_path="calibrated_beacons.json"):
+
+def save_calibration_to_file(
+    mac_address, calibrated_tx_power, file_path="calibrated_beacons.json"
+):
     """
     Saves the calibrated Tx Power for a specific beacon to a JSON file.
 
@@ -79,6 +87,7 @@ def save_calibration_to_file(mac_address, calibrated_tx_power, file_path="calibr
         logger.error(f"Error saving calibration data: {e}")
         print(f"Error saving calibration data: {e}")
 
+
 def choose_mac_address():
     """
     Presents the user with a list of MAC addresses from the config file and prompts them to select one.
@@ -94,13 +103,18 @@ def choose_mac_address():
 
     while True:
         try:
-            choice = int(input("Select a MAC address by entering the corresponding number: "))
+            choice = int(
+                input("Select a MAC address by entering the corresponding number: ")
+            )
             if 1 <= choice <= len(mac_addresses):
                 return mac_addresses[choice - 1]
             else:
-                print(f"Invalid choice, please select a number between 1 and {len(mac_addresses)}.")
+                print(
+                    f"Invalid choice, please select a number between 1 and {len(mac_addresses)}."
+                )
         except ValueError:
             print("Invalid input, please enter a number.")
+
 
 if __name__ == "__main__":
     # Offer the user a selection of MAC addresses from config.py

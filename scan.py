@@ -4,8 +4,11 @@ import argparse
 import json
 import logging
 import paho.mqtt.client as mqtt
-from bluepy.btle import Scanner, DefaultDelegate
-from config import target_devices, kalman_config, threshold_detection_distance_m
+from bluepy.btle import DefaultDelegate
+from bluepy.btle import Scanner
+from config import kalman_config
+from config import target_devices
+from config import threshold_detection_distance_m
 
 # Set up logging
 logging.basicConfig(filename="locator.log", level=logging.DEBUG)
