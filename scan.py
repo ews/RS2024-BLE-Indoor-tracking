@@ -5,7 +5,7 @@ import json
 import logging
 import paho.mqtt.client as mqtt
 from bluepy.btle import Scanner, DefaultDelegate
-from config import target_devices, kalman_config
+from config import target_devices, kalman_config, threshold_detection_distance_m
 
 # Set up logging
 logging.basicConfig(filename='locator.log', level=logging.DEBUG)
@@ -116,13 +116,9 @@ class ScanDelegate(DefaultDelegate):
         """
         if dev.addr not in self.target_devices:
             return
-        ibeacon_data = extract_ibeacon_data(dev)
-        if ibeacon_data is None:
-            return
-        ibeacon_uuid, default_tx_power = ibeacon_data
 
-        # Use calibrated Tx power if available, otherwise use the default Tx power
-        tx_power = self.calibration_data.get(dev.addr, default_tx_power)
+        # Use calibrated Tx power (must be available)
+        tx_power = self.calibration_data[dev.addr]
 
         if dev.addr not in self.kalman_filters:
             self.kalman_filters[dev.addr] = KalmanFilter(
@@ -134,10 +130,12 @@ class ScanDelegate(DefaultDelegate):
         kalman = self.kalman_filters[dev.addr]
         filtered_rssi = kalman.update(dev.rssi)
         raw_distance = calculate_distance(dev.rssi, tx_power)
+        if raw_distance <= threshold_detection_distance_m:
+            logger.info(f"** found beacon {dev.addr} within 3 inches (raw distance) **")
+
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
 
         self.device_info[dev.addr] = {
-            "uuid": ibeacon_uuid,
             "raw_rssi": dev.rssi,
             "filtered_rssi": filtered_rssi,
             "raw_distance": raw_distance,
@@ -145,7 +143,7 @@ class ScanDelegate(DefaultDelegate):
             "tx_power": tx_power
         }
 
-        logger.info(f"Device discovered: MAC={dev.addr}, UUID={ibeacon_uuid}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m")
+        logger.info(f"Device discovered: MAC={dev.addr}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m")
 
         # If MQTT is enabled, send the data
         if self.mqtt_client:
