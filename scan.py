@@ -170,9 +170,9 @@ class ScanDelegate(DefaultDelegate):
             "tx_power": tx_power,
         }
 
-        # logger.info(
-        #     f"Device discovered: MAC={dev.addr}, UUID={ibeacon_uuid}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m"
-        # )
+        logger.info(
+            f"Device discovered: MAC={dev.addr}, UUID=TODO, RSSI={dev.rssi}, Distance={raw_distance:.2f}m"
+        )
 
         # If MQTT is enabled, send the data
         if self.mqtt_client:
