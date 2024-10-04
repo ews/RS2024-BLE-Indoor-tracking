@@ -3,9 +3,12 @@ import time
 import argparse
 import json
 import logging
+import typing as t
+
 import paho.mqtt.client as mqtt
 from bluepy.btle import DefaultDelegate
 from bluepy.btle import Scanner
+
 from config import kalman_config
 from config import target_devices
 from config import threshold_detection_distance_m
@@ -107,7 +110,11 @@ def extract_ibeacon_data(dev):
 
 class ScanDelegate(DefaultDelegate):
     def __init__(
-        self, kalman_filters, target_devices, calibration_data, mqtt_client=None
+        self,
+        kalman_filters: dict,
+        target_devices: dict,
+        calibration_data: dict,
+        mqtt_client: t.Any = None,
     ):
         """
         Initializes the ScanDelegate class, which processes BLE scan data.
@@ -136,13 +143,9 @@ class ScanDelegate(DefaultDelegate):
         """
         if dev.addr not in self.target_devices:
             return
-        ibeacon_data = extract_ibeacon_data(dev)
-        if ibeacon_data is None:
-            return
-        ibeacon_uuid, default_tx_power = ibeacon_data
 
         # Use calibrated Tx power if available, otherwise use the default Tx power
-        tx_power = self.calibration_data.get(dev.addr, default_tx_power)
+        tx_power = self.calibration_data.get(dev.addr, -58.54545454545455)
 
         if dev.addr not in self.kalman_filters:
             self.kalman_filters[dev.addr] = KalmanFilter(
@@ -155,11 +158,11 @@ class ScanDelegate(DefaultDelegate):
         filtered_rssi = kalman.update(dev.rssi)
         raw_distance = calculate_distance(dev.rssi, tx_power)
         if raw_distance <= threshold_detection_distance_m:
-            logger.info(f"** FOUND BEACON {ibeacon_uuid} WITHIN 6 INCHES **")
+            logger.info(f"** FOUND BEACON {dev.addr} WITHIN 6 INCHES **")
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
 
         self.device_info[dev.addr] = {
-            "uuid": ibeacon_uuid,
+            "uuid": "TODO",  # ibeacon_uuid,
             "raw_rssi": dev.rssi,
             "filtered_rssi": filtered_rssi,
             "raw_distance": raw_distance,
