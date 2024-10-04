@@ -1,4 +1,4 @@
-threshold_detection_distance_m = 0.1524
+threshold_detection_distance_m = 0.0762
 
 kalman_config = {
     "process_variance": 1e-3,

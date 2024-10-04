@@ -158,7 +158,7 @@ class ScanDelegate(DefaultDelegate):
         filtered_rssi = kalman.update(dev.rssi)
         raw_distance = calculate_distance(dev.rssi, tx_power)
         if raw_distance <= threshold_detection_distance_m:
-            logger.info(f"** FOUND BEACON {dev.addr} WITHIN 6 INCHES **")
+            logger.info(f"** FOUND BEACON {dev.addr} WITHIN 3 INCHES **")
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
 
         self.device_info[dev.addr] = {
