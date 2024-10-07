@@ -75,5 +75,6 @@ HEre are steps to install ESPhome using Docker and configure ESP32 boards as BLE
        #+end_src
 
 *** ITems I need to work on next
+  - [ ] Do not call extract_ibeacon_data, use default UUID and max tx
   - [ ] Visualization for RSSI and distance (on the works) using grafana
   - [ ] Send this to the audio / video server somehow (UDP seems like the right choice)

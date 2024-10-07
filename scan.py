@@ -63,9 +63,13 @@ def calculate_distance(rssi, tx_power, path_loss_exponent=2):
     logger.debug(f"Distance calculated: RSSI={rssi}, TX Power={tx_power}, Distance={distance:.2f} meters")
     return distance
 
+
+# Dictionary to cache iBeacon data, keyed by MAC address
+ibeacon_cache = {}
+
 def extract_ibeacon_data(dev):
     """
-    Extracts iBeacon data from a BLE device.
+    Extracts iBeacon data from a BLE device, using a cache to avoid re-parsing.
 
     Args:
         dev: A BLE device discovered by the scanner.
@@ -73,19 +77,32 @@ def extract_ibeacon_data(dev):
     Returns:
         tuple: (UUID, Tx Power) or None if not an iBeacon.
     """
+    # Check if we already have iBeacon data for this device in the cache
+    if dev.addr in ibeacon_cache:
+        logger.debug(f"Returning cached iBeacon data for {dev.addr}")
+        return ibeacon_cache[dev.addr]
+
+    # Parse the iBeacon data only if not cached
     for (adtype, desc, value) in dev.getScanData():
         logger.debug(f"Scan data: {adtype}, {desc}, {value}")
         if desc == "Manufacturer":
             try:
+                # iBeacon prefix is 0x4C00, followed by a 21-byte payload
                 if value[0:4] == "4c00" and len(value) >= 46:
                     uuid = value[8:40]
                     major = int(value[40:44], 16)
                     minor = int(value[44:48], 16)
-                    tx_power = int(value[48:50], 16) - 256
-                    return (f"{uuid}-{major}-{minor}", tx_power)
+                    tx_power = int(value[48:50], 16) - 256  # Signed 8-bit value
+
+                    # Cache the parsed iBeacon data
+                    ibeacon_cache[dev.addr] = (f"{uuid}-{major}-{minor}", tx_power)
+                    logger.debug(f"Cached iBeacon data for {dev.addr}")
+
+                    return ibeacon_cache[dev.addr]
             except Exception as e:
                 logger.error(f"Error parsing iBeacon data: {e}")
     return None
+
 
 class ScanDelegate(DefaultDelegate):
     def __init__(self, kalman_filters, target_devices, calibration_data, mqtt_client=None):
