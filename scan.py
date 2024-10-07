@@ -5,7 +5,7 @@ import json
 import logging
 import socket  # Import socket to send UDP packets
 from bluepy.btle import Scanner, DefaultDelegate
-from config import target_devices, kalman_config
+from config import target_devices, kalman_config, threshold_detection_distance_m
 
 # Set up logging
 logging.basicConfig(filename='locator.log', level=logging.DEBUG)
@@ -110,6 +110,8 @@ class ScanDelegate(DefaultDelegate):
         filtered_rssi = kalman.update(dev.rssi)
         raw_distance = calculate_distance(dev.rssi, tx_power)
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
+        if kalman_distance <= threshold_detection_distance_m:
+            pass  # TODO: send signal to server
 
         self.device_info[dev.addr] = {
             "uuid": ibeacon_uuid,
