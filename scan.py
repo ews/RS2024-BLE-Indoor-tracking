@@ -111,7 +111,12 @@ class ScanDelegate(DefaultDelegate):
         raw_distance = calculate_distance(dev.rssi, tx_power)
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
         if kalman_distance <= threshold_detection_distance_m:
-            pass  # TODO: send signal to server
+            try:
+                json_data = json.dumps({"uuid": ibeacon_uuid, "rssi": dev.rssi})
+                self.udp_socket.sendto(json_data.encode('utf-8'), (self.udp_address, self.udp_port))
+                logger.info(f"Sent UDP data to {self.udp_address}:{self.udp_port} - {json_data}")
+            except Exception as e:
+                logger.error(f"Error sending UDP data: {e}")
 
         self.device_info[dev.addr] = {
             "uuid": ibeacon_uuid,
@@ -122,15 +127,7 @@ class ScanDelegate(DefaultDelegate):
             "tx_power": tx_power
         }
 
-        logger.info(f"Device discovered: MAC={dev.addr}, UUID={ibeacon_uuid}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m")
-
-        # Send data to the Clojure UDP server as JSON
-        try:
-            json_data = json.dumps({"uuid": ibeacon_uuid, "rssi": dev.rssi})
-            self.udp_socket.sendto(json_data.encode('utf-8'), (self.udp_address, self.udp_port))
-            logger.info(f"Sent UDP data to {self.udp_address}:{self.udp_port} - {json_data}")
-        except Exception as e:
-            logger.error(f"Error sending UDP data: {e}")
+        logger.info(f"Device discovered: MAC={dev.addr}, UUID={ibeacon_uuid}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m")        
 
 
 def curses_display(stdscr, delegate):
