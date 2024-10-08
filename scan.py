@@ -92,12 +92,13 @@ class ScanDelegate(DefaultDelegate):
     def handleDiscovery(self, dev, isNewDev, isNewData):
         if dev.addr not in self.target_devices:
             return
-        ibeacon_data = extract_ibeacon_data(dev)
-        if ibeacon_data is None:
-            return
-        ibeacon_uuid, default_tx_power = ibeacon_data
+        # ibeacon_data = extract_ibeacon_data(dev)
+        # if ibeacon_data is None:
+        #     return
+        # ibeacon_uuid, default_tx_power = ibeacon_data
 
-        tx_power = self.calibration_data.get(dev.addr, default_tx_power)
+        ibeacon_uuid = "<stevenchu-testing>"
+        tx_power = self.calibration_data[dev.addr]
 
         if dev.addr not in self.kalman_filters:
             self.kalman_filters[dev.addr] = KalmanFilter(
