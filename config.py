@@ -1,3 +1,5 @@
+threshold_detection_distance_m = 0.0762  # 3 inches
+
 kalman_config = {
     'process_variance': 1e-3,
     'measurement_variance': 4.0,
