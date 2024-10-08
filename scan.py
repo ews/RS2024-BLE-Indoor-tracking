@@ -110,14 +110,14 @@ class ScanDelegate(DefaultDelegate):
         kalman = self.kalman_filters[dev.addr]
         filtered_rssi = kalman.update(dev.rssi)
         raw_distance = calculate_distance(dev.rssi, tx_power)
-        kalman_distance = calculate_distance(filtered_rssi, tx_power)
-        if kalman_distance <= threshold_detection_distance_m:
+        if raw_distance <= threshold_detection_distance_m:
             try:
                 json_data = json.dumps({"uuid": ibeacon_uuid, "rssi": dev.rssi})
                 self.udp_socket.sendto(json_data.encode('utf-8'), (self.udp_address, self.udp_port))
                 logger.info(f"Sent UDP data to {self.udp_address}:{self.udp_port} - {json_data}")
             except Exception as e:
                 logger.error(f"Error sending UDP data: {e}")
+        kalman_distance = calculate_distance(filtered_rssi, tx_power)
 
         self.device_info[dev.addr] = {
             "uuid": ibeacon_uuid,
