@@ -90,15 +90,26 @@ class ScanDelegate(DefaultDelegate):
         self.udp_port = udp_port  # Clojure server port
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
+        """
+        Handles the discovery of BLE devices and applies Kalman filtering and distance calculation.
+
+        Args:
+            dev: The discovered BLE device.
+            isNewDev: Whether the device is newly discovered.
+            isNewData: Whether the device has new data.
+        """
         if dev.addr not in self.target_devices:
             return
+
+        # Extract iBeacon data (UUID, Tx Power)
         ibeacon_data = extract_ibeacon_data(dev)
         if ibeacon_data is None:
             return
-        ibeacon_uuid, default_tx_power = ibeacon_data
 
+        ibeacon_uuid, default_tx_power = ibeacon_data
         tx_power = self.calibration_data.get(dev.addr, default_tx_power)
 
+        # Initialize Kalman filter for the device if it's new
         if dev.addr not in self.kalman_filters:
             self.kalman_filters[dev.addr] = KalmanFilter(
                 process_variance=kalman_config['process_variance'],
@@ -106,11 +117,17 @@ class ScanDelegate(DefaultDelegate):
                 initial_estimate=dev.rssi,
                 initial_error=kalman_config['initial_error']
             )
+
         kalman = self.kalman_filters[dev.addr]
+
+        # Update RSSI using Kalman filter
         filtered_rssi = kalman.update(dev.rssi)
+
+        # Calculate raw and Kalman-filtered distances
         raw_distance = calculate_distance(dev.rssi, tx_power)
         kalman_distance = calculate_distance(filtered_rssi, tx_power)
 
+        # Store device information
         self.device_info[dev.addr] = {
             "uuid": ibeacon_uuid,
             "raw_rssi": dev.rssi,
@@ -122,13 +139,21 @@ class ScanDelegate(DefaultDelegate):
 
         logger.info(f"Device discovered: MAC={dev.addr}, UUID={ibeacon_uuid}, RSSI={dev.rssi}, Distance={raw_distance:.2f}m")
 
-        # Send data to the Clojure UDP server as JSON
-        try:
-            json_data = json.dumps({"uuid": ibeacon_uuid, "rssi": dev.rssi})
-            self.udp_socket.sendto(json_data.encode('utf-8'), (self.udp_address, self.udp_port))
-            logger.info(f"Sent UDP data to {self.udp_address}:{self.udp_port} - {json_data}")
-        except Exception as e:
-            logger.error(f"Error sending UDP data: {e}")
+        # Send full information to the Clojure UDP server as JSON
+        if raw_distance <= 0.0762:
+            try:
+                json_data = json.dumps({
+                    "uuid": ibeacon_uuid,
+                    "rssi_raw": dev.rssi,
+                    "rssi_filtered": filtered_rssi,
+                    "distance_raw": raw_distance,
+                    "distance_filtered": kalman_distance,
+                    "tx_power": tx_power
+                })
+                self.udp_socket.sendto(json_data.encode('utf-8'), (self.udp_address, self.udp_port))
+                logger.info(f"Sent UDP data to {self.udp_address}:{self.udp_port} - {json_data}")
+            except Exception as e:
+                logger.error(f"Error sending UDP data: {e}")
 
 
 def curses_display(stdscr, delegate):
